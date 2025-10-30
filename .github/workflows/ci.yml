@@ -37,7 +37,7 @@ jobs:
           tags: ${{ env.CI_REGISTRY_IMAGE }}
 
   deploy:
-    needs: build
+    needs: build-and-push
     runs-on: ubuntu-latest
     container:
       image: bitnami/kubectl:latest
