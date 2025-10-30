@@ -1,0 +1,69 @@
+
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  CI_REGISTRY_IMAGE: quiner1793/fastapi_server
+  CI_PROJECT_DIR: .
+  CI_COMMIT_TAG: latest
+
+jobs:
+  echo_hello_world:
+    name: Echo Hello World
+    runs-on: ubuntu-latest
+    container: bash:latest
+    steps:
+      - name: Print Hello World
+        run: echo "hello world"
+
+  build:
+    name: Build image
+    runs-on: ubuntu-latest
+    container:
+      image: gcr.io/kaniko-project/executor:v1.23.2-debug
+      options: --entrypoint ""
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker credentials
+        run: |
+          echo "${{ secrets.DOCKER_CREDS }}" > /kaniko/.docker/config.json
+
+      - name: Build and push image
+        run: |
+          /kaniko/executor \
+            --context "${{ env.CI_PROJECT_DIR }}" \
+            --dockerfile "${{ env.CI_PROJECT_DIR }}/Dockerfile" \
+            --destination "${{ env.CI_REGISTRY_IMAGE }}:${{ env.CI_COMMIT_TAG }}"
+
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    container:
+      image: bitnami/kubectl:latest
+      options: --entrypoint ""
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" > ~/.kube/config
+
+      - name: Update image tag
+        run: |
+          sed -i "s|image:.*|image: ${{ env.CI_REGISTRY_IMAGE }}:${{ env.CI_COMMIT_TAG }}|g" k8s/deployment.yaml
+          cat k8s/deployment.yaml
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/
+          kubectl rollout status deployment/python-deployment-001

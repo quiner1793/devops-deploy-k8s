@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Name of the deployment
+  name: python-deployment-001
+  # Deployment labels
+  # These labels are attached to the Deployment’s metadata and help 
+  # identify the Deployment resource. They are for organizational purposes 
+  # and can be used by tools and dashboards.
+  labels:
+    app: python-app-unique
+    # Can be others, for ex:
+    # environment: production
+    # tier: backend
+spec:
+  # Number of pod instances for load balancing and high-availability
+  replicas: 1
+  # Selector labels
+  # These labels determine which pods are managed by this Deployment. 
+  # The Deployment uses these matchLabels to filter pods during updates and rollouts.
+  selector:
+    matchLabels:
+      app: python-app-unique
+  # Pod template that describes the pods the deployment will create.
+  template:
+    metadata:
+      # Template pod labels
+      # These labels are applied to every pod that the Deployment creates. 
+      # They must match the selector labels so that the Deployment can correctly identify its pods.
+      labels:
+        app: python-app-unique
+      # Annotations can be used to attach arbitrary metadata (not used for selection)
+      annotations:
+        example.com/annotation: "This pod is part of a FastAPI deployment demo"
+    spec:
+      containers:
+      - name: python-container-001  # Container name within the pod
+        image: docker.io/quiner1793/fastapi_server:latest  # Container image to be pulled from the repository
+        # Container resource requests and limits to control resource allocation
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1024Mi"
+          limits:
+            cpu: "500m"
+            memory: "1024Mi"
+        # Defines the container port that the application listens on.
+        ports:
+        - containerPort: 8080
+        # Health checks ensure the container is operating as expected
+        readinessProbe:
+          # The readiness probe checks if the container is ready to receive traffic.
+          httpGet:
+            path: /healthcheck
+            port: 8080
+          initialDelaySeconds: 10  # Delay before the first probe is initiated
+          periodSeconds: 5         # How often to perform the probe
+        livenessProbe:
+          # The liveness probe checks if the container is still running.
+          httpGet:
+            path: /healthcheck
+            port: 8080
+          initialDelaySeconds: 15  # Delay before the first probe is initiated
+          periodSeconds: 20        # How often to perform the probe
