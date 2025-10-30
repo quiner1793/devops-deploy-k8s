@@ -7,8 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  CI_REGISTRY_IMAGE: quiner1793/fastapi_server
-  CI_COMMIT_TAG: latest
+  CI_REGISTRY_IMAGE: quiner1793/fastapi_server:latest
 
 jobs:
   echo_hello_world:
@@ -17,22 +16,25 @@ jobs:
       - name: Print Hello World
         run: echo "hello world"
 
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Build and push image with Kaniko
-        uses: int128/kaniko-action@v1
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          registry: docker.io
-          repo: ${{ env.CI_REGISTRY_IMAGE }}
-          tag: ${{ env.CI_COMMIT_TAG }}
-          path: .
-          dockerfile: Dockerfile
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: int128/kaniko-action@v1
+        with:
+          dockerfile: Dockerfile
+          context: .
+          push: true
+          tags: ${{ env.CI_REGISTRY_IMAGE }}
 
   deploy:
     needs: build
