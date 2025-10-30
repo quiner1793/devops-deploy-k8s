@@ -54,7 +54,7 @@ jobs:
 
       - name: Update image tag
         run: |
-          sed -i "s|image:.*|image: ${{ env.CI_REGISTRY_IMAGE }}:${{ env.CI_COMMIT_TAG }}|g" k8s/deployment.yaml
+          sed -i "s|image:.*|image: ${{ env.CI_REGISTRY_IMAGE }}|g" k8s/deployment.yaml
           cat k8s/deployment.yaml
 
       - name: Apply Kubernetes manifests
